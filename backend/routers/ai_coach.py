@@ -9,11 +9,12 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 import httpx
+from sqlalchemy import func
 from sqlalchemy.orm import Session as DBSession
 from dotenv import load_dotenv
 
 from models import get_db
-from models.models import ChatMessage, ExercisePlan, User
+from models.models import ChatMessage, ExercisePlan, Session, User
 from routers.auth import get_current_user
 
 load_dotenv(Path(__file__).parent.parent / ".env")
@@ -33,9 +34,16 @@ Your role is to:
 - Always remind users that you are an AI assistant and serious concerns should be discussed with a qualified therapist
 
 Severity levels used by this platform:
+- Unknown: No assessment recorded yet. The user hasn't completed a speech recording session.
 - Healthy: No dysarthria detected. Encourage maintenance exercises.
 - Moderate: Noticeable speech difficulties. Focus on articulation, breath control, and rate.
 - Severe: Significant impairment. Focus on foundational breath support, vowel clarity, and short phrase practice.
+
+IMPORTANT — Progress assessment rules:
+1. If total_sessions is 0 and severity is "Unknown": Never claim the user is making progress or doing well. Instead, honestly state they haven't recorded any sessions yet and guide them to the Record & Detect page to get their first baseline assessment. Be encouraging about getting started.
+2. If total_sessions is 1: Acknowledge they've taken the first step. Don't make claims about trends or progress — there's only one data point. Focus on encouraging consistency.
+3. If total_sessions >= 2: You MAY discuss progress trends based on the score history provided in the context. Reference specific improvements or areas to work on. Be honest — if scores are declining or fluctuating, acknowledge it constructively.
+4. Never give generic "you're doing great" responses when you have no data to support it. Always ground your assessment in the actual data provided.
 
 Never suggest the user stop therapy or that exercises are unnecessary. Keep responses under 200 words unless the user asks for detail.
 
@@ -58,6 +66,7 @@ Rules:
   "prompt": null OR a short string the patient should say aloud (only for speech/voice exercises)
   "requires_recording": true if the patient must speak (prompt is not null), false otherwise
 
+- For Unknown / no data: generate a gentle introductory plan suitable for a first-time user. Include breathing exercises, easy vowel sounds, and a simple warm-up. Keep it welcoming and low-pressure. Include 2-3 recording exercises.
 - For Healthy severity: balance articulation, rate control, and maintenance exercises; include 3-4 recording exercises.
 - For Moderate severity: focus on articulation drills, breath support, and connected speech; include 3-4 recording exercises.
 - For Severe severity: focus on breath support, vowel clarity, and single words/short phrases; include 2-3 recording exercises.
@@ -68,7 +77,7 @@ Rules:
 class ChatRequest(BaseModel):
     message: str
     severity: str = "Unknown"
-    score: float = 50.0
+    score: Optional[float] = None
     history: List[dict] = []
 
 
@@ -84,8 +93,8 @@ class HistoryMessage(BaseModel):
 
 
 class ExercisePlanRequest(BaseModel):
-    severity: str = "Moderate"
-    score: float = 50.0
+    severity: str = "Unknown"
+    score: Optional[float] = None
 
 
 class GeneratedExercise(BaseModel):
@@ -130,6 +139,32 @@ async def chat(
     if not api_key:
         raise HTTPException(status_code=503, detail="AI Coach is not configured (missing API key).")
 
+    # Build richer patient context from DB
+    total_sessions = db.query(func.count(Session.id)).filter(
+        Session.patient_id == current_user.id
+    ).scalar() or 0
+
+    all_sessions = db.query(Session).filter(
+        Session.patient_id == current_user.id
+    ).order_by(Session.created_at.asc()).all()
+
+    score_str = f"{req.score:.0f}/100" if req.score is not None else "N/A"
+    if total_sessions == 0:
+        score_str = "N/A (no sessions recorded)"
+
+    # Compute a simple trend if enough data
+    trend_str = ""
+    if len(all_sessions) >= 3:
+        recent = sum(s.score for s in all_sessions[-3:]) / 3
+        earlier = sum(s.score for s in all_sessions[:3]) / 3
+        diff = recent - earlier
+        if diff > 3:
+            trend_str = " (scores trending upward)"
+        elif diff < -3:
+            trend_str = " (scores trending downward)"
+        else:
+            trend_str = " (scores stable)"
+
     # Build message list: system prompt + conversation history + current message
     groq_messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     for h in req.history[-20:]:
@@ -139,8 +174,10 @@ async def chat(
             groq_messages.append({"role": role, "content": content})
 
     user_context = (
-        f"[Patient context — Current severity: {req.severity}, "
-        f"Intelligibility score: {req.score:.0f}/100]\n\n"
+        f"[Patient context — Sessions: {total_sessions}, "
+        f"Severity: {req.severity}, "
+        f"Score: {score_str}"
+        f"{trend_str}]\n\n"
         f"{req.message}"
     )
     groq_messages.append({"role": "user", "content": user_context})
@@ -210,8 +247,9 @@ async def generate_exercises(req: ExercisePlanRequest):
     if not api_key:
         raise HTTPException(status_code=503, detail="AI Coach is not configured (missing API key).")
 
+    score_str = "N/A" if req.score is None else f"{req.score:.0f}/100"
     user_prompt = (
-        f"Patient severity: {req.severity}. Intelligibility score: {req.score:.0f}/100.\n"
+        f"Patient severity: {req.severity}. Intelligibility score: {score_str}.\n"
         "Generate a personalised exercise plan as a JSON array."
     )
 

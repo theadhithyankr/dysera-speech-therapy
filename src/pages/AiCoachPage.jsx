@@ -19,7 +19,7 @@ const WELCOME = {
   Healthy:  "Great news — your last assessment shows healthy speech patterns! Keep up the good work with maintenance exercises below.",
   Moderate: "Your last assessment detected moderate dysarthria. Regular practice of the exercises below can make a real difference — let's keep going.",
   Severe:   "Your last assessment shows severe dysarthria. Take it one step at a time — even small daily practice leads to meaningful progress.",
-  Unknown:  "No assessment on record yet. Record an audio sample on the Record & Detect page to get your personalised coaching.",
+  Unknown:  "You haven't recorded any speech samples yet — and that's completely fine! Head over to the Record & Detect page to get your first baseline assessment. Once you do, I'll be able to give you personalised coaching and exercises.",
 }
 
 export default function AiCoachPage() {
@@ -38,21 +38,21 @@ export default function AiCoachPage() {
     })
       .then(r => r.json())
       .then(async data => {
-        let sev = "Moderate", sc = 50
+        let sev = "Unknown", sc = null
         if (Array.isArray(data) && data[0]) {
-          sev = data[0].severity ?? "Moderate"
-          sc  = data[0].score    ?? 50
+          sev = data[0].severity ?? "Unknown"
+          sc  = data[0].score    ?? null
           setSeverity(sev)
-          setScore(Math.round(sc))
+          setScore(sc !== null ? Math.round(sc) : null)
         }
         // Generate personalised exercises
-        setExercisesLoading(true)
-        try {
-          const exRes = await fetch(`${API_BASE}/api/ai-coach/exercises`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ severity: sev, score: sc }),
-          })
+          setExercisesLoading(true)
+          try {
+            const exRes = await fetch(`${API_BASE}/api/ai-coach/exercises`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ severity: sev, score: sc ?? 50 }),
+            })
           const exData = await exRes.json()
           setExercises(exData.exercises ?? [])
         } catch {}
@@ -120,7 +120,7 @@ export default function AiCoachPage() {
         body: JSON.stringify({
           message: text,
           severity,
-          score: score ?? 50,
+          score: score,
           history: historyToSend,
         }),
       })
