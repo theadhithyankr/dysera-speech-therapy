@@ -1,0 +1,40 @@
+--- Evaluation Metrics Report ---
+
+--- Average Results for SVM ---
+  Average Accuracy: 0.5976
+  Average Balanced Accuracy: 0.5729
+  Average F1 Macro: 0.4167
+
+--- Average Results for RandomForest ---
+  Average Accuracy: 0.5259
+  Average Balanced Accuracy: 0.4884
+  Average F1 Macro: 0.3821
+
+--- Average Results for LogisticRegression ---
+  Average Accuracy: 0.6479
+  Average Balanced Accuracy: 0.5970
+  Average F1 Macro: 0.4342
+
+--- Sanity Checks ---
+
+Overall Class Distribution (0: Control, 1: Dysarthric):
+label
+1    3756
+0    1261
+Name: count, dtype: int64
+
+Per-Speaker Class Distribution:
+label         0     1
+speaker_id           
+F03         577     0
+FC01          0   164
+FC03          0  1002
+M01         386     0
+M04         298     0
+MC01          0  1108
+MC03          0   828
+MC04          0   654
+
+Constant Classifier Behavior Check:
+Number of unique predicted classes by the best model (LogisticRegression) on the full dataset: 2
+The best model (LogisticRegression) is predicting 2 distinct classes: [0 1]
