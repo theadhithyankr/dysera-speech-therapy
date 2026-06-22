@@ -1,4 +1,4 @@
-import { Bell, ChevronDown } from "lucide-react"
+import { ChevronDown } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -34,11 +34,6 @@ export default function Navbar({ role = "patient", userName }) {
       >
         {role === "therapist" ? "Speech Therapist" : "Patient"}
       </Badge>
-
-      {/* Notification bell — UI placeholder */}
-      <Button variant="ghost" size="icon" className="relative" disabled>
-        <Bell className="h-4 w-4" />
-      </Button>
 
       {/* Avatar dropdown */}
       <DropdownMenu>
