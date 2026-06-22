@@ -8,6 +8,8 @@ import RecordDetectPage from "@/pages/RecordDetectPage"
 import TherapyExercisePage from "@/pages/TherapyExercisePage"
 import PatientReportPage from "@/pages/PatientReportPage"
 import AiCoachPage from "@/pages/AiCoachPage"
+import PatientProfile from "@/pages/PatientProfile"
+import PatientSettings from "@/pages/PatientSettings"
 
 function PrivateRoute({ element }) {
   const { user, authLoading } = useUser()
@@ -34,6 +36,8 @@ function AppRoutes() {
       <Route path="/patient/therapy"   element={<PrivateRoute element={<TherapyExercisePage />} />} />
       <Route path="/patient/report"    element={<PrivateRoute element={<PatientReportPage />} />} />
       <Route path="/patient/ai-coach"  element={<PrivateRoute element={<AiCoachPage />} />} />
+      <Route path="/patient/profile"  element={<PrivateRoute element={<PatientProfile />} />} />
+      <Route path="/patient/settings" element={<PrivateRoute element={<PatientSettings />} />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

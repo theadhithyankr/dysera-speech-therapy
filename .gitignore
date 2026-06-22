@@ -34,3 +34,5 @@ backend/ml_models/*.pkl
 backend/supabase/
 backend/.temp/
 *.csv
+
+.vercel

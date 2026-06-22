@@ -3,6 +3,7 @@ Authentication router.
 POST /api/auth/register
 POST /api/auth/login
 GET  /api/auth/me
+PUT  /api/auth/me          — update profile
 """
 
 import os
@@ -48,13 +49,18 @@ class TokenResponse(BaseModel):
 
 
 class UserOut(BaseModel):
-    id:        int
-    email:     str
-    full_name: str
-    role:      str
+    id:         int
+    email:      str
+    full_name:  str
+    role:       str
+    created_at: str
 
     class Config:
         from_attributes = True
+
+
+class UpdateProfileRequest(BaseModel):
+    full_name: str
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -134,4 +140,28 @@ def login(
 
 @router.get("/me", response_model=UserOut)
 def me(current_user: User = Depends(get_current_user)):
-    return current_user
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "role": current_user.role,
+        "created_at": current_user.created_at.isoformat() if current_user.created_at else "",
+    }
+
+
+@router.put("/me", response_model=UserOut)
+def update_me(
+    body: UpdateProfileRequest,
+    db: DBSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    current_user.full_name = body.full_name
+    db.commit()
+    db.refresh(current_user)
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "role": current_user.role,
+        "created_at": current_user.created_at.isoformat() if current_user.created_at else "",
+    }

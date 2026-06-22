@@ -50,8 +50,8 @@ export default function Navbar({ role = "patient", userName }) {
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Profile</DropdownMenuItem>
-          <DropdownMenuItem>Settings</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate("/patient/profile")}>Profile</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate("/patient/settings")}>Settings</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             className="text-red-600"
