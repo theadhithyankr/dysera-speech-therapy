@@ -2,6 +2,7 @@
   <br />
   <h1>🗣️ Dysera Speech Therapy</h1>
   <p><strong>AI-Powered Dysarthria Assessment & Speech Therapy Platform</strong></p>
+  <p><a href="https://dysera-speech-therapy-main.vercel.app"><strong>View Live Demo</strong></a></p>
 </div>
 
 <p align="center">
@@ -122,6 +123,7 @@ npm run dev
 ---
 
 ## 🔗 Links
+- **Live Demo:** [https://dysera-speech-therapy-main.vercel.app](https://dysera-speech-therapy-main.vercel.app)
 - **Repository:** [GitHub](https://github.com/theadhithyankr/dysera-speech-therapy)
 
 <div align="center">
