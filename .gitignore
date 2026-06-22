@@ -28,6 +28,7 @@ Thumbs.db
 
 # ML / Data
 *.npz
+!backend/ml_models/dysarthria_head.npz
 backend/data/
 backend/dysarthria.db
 backend/ml_models/*.pkl
